@@ -17,6 +17,11 @@ Describe "Basic Functionality" {
     $LASTEXITCODE | Should -Be 0
   }
 
+  It "is possible to run a third command" {
+    $distro.Launch("env")
+    $LASTEXITCODE | Should -Be 0
+  }
+
   It "is possible to run a command after restarting the container" {
     $distro.Shutdown()
     $distro.Launch("true")
