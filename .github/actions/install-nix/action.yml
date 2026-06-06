@@ -1,3 +1,5 @@
+name: Install Nix
+description: 'Installs the Nix package manager'
 runs:
   using: 'composite'
   steps:

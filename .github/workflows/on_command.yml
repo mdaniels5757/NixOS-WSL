@@ -6,8 +6,6 @@ on:
 
 permissions:
   contents: read
-  actions: write
-  pull-requests: write
 
 jobs:
   parse:
@@ -15,6 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       command: ${{ steps.command.outputs.command }}
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Get actor permissions
         id: check-permissions
@@ -44,17 +45,25 @@ jobs:
       - name: Parse command
         id: command
         if: steps.check-permissions.outputs.permitted || github.actor == 'nixos-wsl-bot'
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
-          echo ${{ github.event.comment.body }} | sed -nE 's|^/([a-z0-9\-]+)|command=\1|p' >> $GITHUB_OUTPUT
+          echo "$COMMENT_BODY" | sed -nE 's|^/([a-z0-9\-]+)|command=\1|p' >> $GITHUB_OUTPUT
 
   trigger-on-push:
     name: Trigger Push Workflow 🚀
     needs: parse
     if: needs.parse.outputs.command == 'run-ci' && github.event.issue.pull_request
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
 
       - name: Get PR branch
         id: branch
@@ -65,15 +74,17 @@ jobs:
 
       - name: Dispatch workflow
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          BRANCH: ${{ steps.branch.outputs.branch }}
         with:
           script: |
             github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'on_push.yml',
-              ref: '${{ steps.branch.outputs.branch }}',
+              ref: process.env.BRANCH,
               inputs: {
-                pr_number: '${{ github.event.issue.number }}',
+                pr_number: context.issue.number.toString(),
                 post_result: 'true'
               }
             })

@@ -3,7 +3,7 @@
 name: "On Backport Label"
 
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
     types:
       - closed
       - labeled
@@ -32,6 +32,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
 
       - name: Create backport PR
         id: backport
@@ -54,25 +56,31 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
 
       - name: Get PR branch
         id: branch
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ matrix.pr }}
         run: |
-          echo "branch=$(gh pr view ${{ matrix.pr }} --json headRefName -q .headRefName)" >> $GITHUB_OUTPUT
+          echo "branch=$(gh pr view "$PR_NUMBER" --json headRefName -q .headRefName)" >> $GITHUB_OUTPUT
 
       - name: Dispatch workflow
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          BRANCH: ${{ steps.branch.outputs.branch }}
+          PR_NUMBER: ${{ matrix.pr }}
         with:
           script: |
             github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'on_push.yml',
-              ref: '${{ steps.branch.outputs.branch }}',
+              ref: process.env.BRANCH,
               inputs: {
-                pr_number: '${{ matrix.pr }}',
+                pr_number: process.env.PR_NUMBER,
                 post_result: 'true'
               }
             })

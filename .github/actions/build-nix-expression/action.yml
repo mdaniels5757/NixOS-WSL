@@ -1,3 +1,5 @@
+name: Build Nix Expression
+description: 'Build a Nix expression'
 inputs:
   expression:
     description: 'Nix expression to build'
@@ -17,9 +19,11 @@ runs:
     - name: Build ${{ inputs.expression }} 🛠️
       id: build
       shell: bash
+      env:
+        EXPRESSION: ${{ inputs.expression }}
       run: |
         JSON=$(mktemp)
-        (nix build -L ${{ inputs.expression }} --no-link --json >$JSON) |& sed -uE 's/^(trace: +)?warning:(\s+|$)/::warning::/;s/^(trace: +)?error:(\s+|$)/::error::/;s/^trace:(\s+|$)/::notice::trace: /'
+        (nix build -L "$EXPRESSION" --no-link --json >$JSON) |& sed -uE 's/^(trace: +)?warning:(\s+|$)/::warning::/;s/^(trace: +)?error:(\s+|$)/::error::/;s/^trace:(\s+|$)/::notice::trace: /'
         DRV=$(jq -r .[0].outputs.out <$JSON)
         echo "derivation=$DRV" >> $GITHUB_OUTPUT
         echo "- Built \`$DRV\`" >> $GITHUB_STEP_SUMMARY

@@ -14,6 +14,7 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Install Nix ❄️
         uses: ./.github/actions/install-nix
@@ -45,10 +46,14 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Install Nix ❄️
         uses: ./.github/actions/install-nix
 
       - name: Run Check 📋
+        env:
+          CHECK: ${{ matrix.check }}
+          SYSTEM: ${{ matrix.system }}
         run: |
-          nix build -L --impure --expr "with builtins; (getFlake (toString ./.)).checks.${{ matrix.system }}.${{ matrix.check }}"
+          nix build -L --impure --expr "with builtins; (getFlake (toString ./.)).checks.${SYSTEM}.${CHECK}"

@@ -22,6 +22,7 @@ jobs:
         with:
           repository: microsoft/WSL
           ref: 2.6.3
+          persist-credentials: false
 
       - name: Install dependencies 📦
         shell: bash
